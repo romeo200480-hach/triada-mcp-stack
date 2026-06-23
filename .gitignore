@@ -1,0 +1,20 @@
+# Секрети — НІКОЛИ не комітити
+.env
+*.env
+!.env.example
+# Віртуальні оточення
+.venv/
+venv/
+__pycache__/
+*.pyc
+# Резервні копії й чернетки
+*.bak
+*.bak-*
+*.bak2*
+*.broken
+.pytest_cache/
+# Логи
+*.log
+# Локальні налаштування
+.claude/
+node_modules/

@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCP Server — Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d1117;
+      --surface:   #161b22;
+      --border:    #30363d;
+      --text:      #c9d1d9;
+      --muted:     #8b949e;
+      --accent:    #58a6ff;
+
+      --ok-bg:     #1f6f3a;
+      --ok-text:   #aff5b4;
+      --deg-bg:    #9e6a03;
+      --deg-text:  #f8e3a1;
+      --down-bg:   #67060c;
+      --down-text: #ffa198;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 13px;
+      min-height: 100vh;
+      padding: 24px 20px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+
+    header h1 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: 0.02em;
+    }
+
+    #overall-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    #ts {
+      margin-left: auto;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    #refresh-bar {
+      width: 100%;
+      height: 2px;
+      background: var(--border);
+      border-radius: 1px;
+      margin-bottom: 24px;
+      overflow: hidden;
+    }
+
+    #refresh-fill {
+      height: 100%;
+      background: var(--accent);
+      width: 100%;
+      transition: width 1s linear;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .card-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .badge-ok       { background: var(--ok-bg);   color: var(--ok-text);   }
+    .badge-degraded { background: var(--deg-bg);  color: var(--deg-text);  }
+    .badge-down     { background: var(--down-bg); color: var(--down-text); }
+    .badge-unknown  { background: var(--border);  color: var(--muted);     }
+
+    .card-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 3px 0;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .card-row:last-child { border-bottom: none; }
+
+    .card-row span:last-child {
+      color: var(--text);
+      text-align: right;
+      max-width: 60%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .card-error {
+      color: var(--down-text);
+      font-size: 11px;
+      margin-top: 8px;
+      word-break: break-all;
+    }
+
+    #warnings-section {
+      margin-top: 24px;
+    }
+
+    #warnings-section h2 {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 8px;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+
+    .warning-item {
+      background: var(--deg-bg);
+      color: var(--deg-text);
+      border-radius: 6px;
+      padding: 6px 12px;
+      margin-bottom: 6px;
+      font-size: 12px;
+    }
+
+    #error-banner {
+      background: var(--down-bg);
+      color: var(--down-text);
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 12px;
+      display: none;
+    }
+
+    .no-key {
+      text-align: center;
+      margin-top: 80px;
+      color: var(--muted);
+    }
+
+    .no-key code {
+      color: var(--accent);
+      background: var(--surface);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+  </style>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0d1117">
+  <meta name="mobile-web-app-capable" content="yes">
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", function () {
+        navigator.serviceWorker.register("/sw.js");
+      });
+    }
+  </script>
+</head>
+<body>
+
+<div id="error-banner"></div>
+
+<header>
+  <h1>mac-mini / mcp-server</h1>
+  <span id="overall-badge" class="badge badge-unknown">—</span>
+  <span id="ts"></span>
+</header>
+
+<div id="refresh-bar"><div id="refresh-fill"></div></div>
+
+<div class="grid" id="grid"></div>
+
+<div id="warnings-section" style="display:none">
+  <h2>Warnings</h2>
+  <div id="warnings-list"></div>
+</div>
+
+<script>
+  const API_KEY = (function () {
+    if (location.search.includes("logout")) localStorage.removeItem("mcp_key");
+    let k = localStorage.getItem("mcp_key") || "";
+    if (!k) {
+      k = (prompt("MCP API key:") || "").trim();
+      if (k) localStorage.setItem("mcp_key", k);
+    }
+    return k;
+  })();
+
+  const COMPONENT_ORDER = [
+    "qdrant", "ollama", "n8n", "cloudflare", "tailscale", "event_log", "mcp_self"
+  ];
+
+  const COMPONENT_LABELS = {
+    qdrant:     "Qdrant",
+    ollama:     "Ollama / bge-m3",
+    n8n:        "n8n",
+    cloudflare: "Cloudflare Tunnel",
+    tailscale:  "Tailscale",
+    event_log:  "Event Log",
+    mcp_self:   "MCP Server",
+  };
+
+  function badgeClass(status) {
+    if (status === "ok")       return "badge-ok";
+    if (status === "degraded") return "badge-degraded";
+    if (status === "down")     return "badge-down";
+    return "badge-unknown";
+  }
+
+  function renderCard(name, comp) {
+    const label  = COMPONENT_LABELS[name] || name;
+    const status = comp.status || "unknown";
+    const cls    = badgeClass(status);
+
+    let rows = "";
+
+    if (comp.latency_ms != null) {
+      rows += row("latency", comp.latency_ms + " ms");
+    }
+
+    const details = comp.details || {};
+    for (const [k, v] of Object.entries(details)) {
+      if (v == null || v === "") continue;
+      rows += row(k, String(v));
+    }
+
+    let errorHtml = "";
+    if (comp.error) {
+      errorHtml = `<div class="card-error">&#9888; ${esc(comp.error)}</div>`;
+    }
+
+    return `
+      <div class="card">
+        <div class="card-header">
+          <span class="card-name">${esc(label)}</span>
+          <span class="badge ${cls}">${esc(status)}</span>
+        </div>
+        ${rows}
+        ${errorHtml}
+      </div>`;
+  }
+
+  function row(k, v) {
+    return `<div class="card-row"><span>${esc(k)}</span><span>${esc(v)}</span></div>`;
+  }
+
+  function esc(s) {
+    return String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  function render(data) {
+    const overall = data.overall_status || "unknown";
+    const badge   = document.getElementById("overall-badge");
+    badge.textContent = overall;
+    badge.className   = "badge " + badgeClass(overall);
+
+    document.getElementById("ts").textContent =
+      data.timestamp ? new Date(data.timestamp).toLocaleTimeString("uk-UA") : "";
+
+    const components = data.components || {};
+    const keys = COMPONENT_ORDER.filter(k => k in components)
+      .concat(Object.keys(components).filter(k => !COMPONENT_ORDER.includes(k)));
+
+    document.getElementById("grid").innerHTML =
+      keys.map(k => renderCard(k, components[k])).join("");
+
+    const warnings = data.warnings || [];
+    const ws = document.getElementById("warnings-section");
+    if (warnings.length > 0) {
+      ws.style.display = "block";
+      document.getElementById("warnings-list").innerHTML =
+        warnings.map(w => `<div class="warning-item">${esc(w)}</div>`).join("");
+    } else {
+      ws.style.display = "none";
+    }
+
+    document.getElementById("error-banner").style.display = "none";
+  }
+
+  function showError(msg) {
+    const b = document.getElementById("error-banner");
+    b.textContent = msg;
+    b.style.display = "block";
+  }
+
+  async function fetchHealth() {
+    try {
+      const resp = await fetch("/api/health", {
+        headers: { "X-MCP-API-Key": API_KEY },
+      });
+      if (!resp.ok) {
+        showError("HTTP " + resp.status + " — перевір API ключ або стан сервера");
+        return;
+      }
+      render(await resp.json());
+    } catch (e) {
+      showError("Fetch error: " + e.message);
+    }
+  }
+
+  // Progress bar countdown
+  let fillPct = 100;
+  const INTERVAL_S = 30;
+  const fill = document.getElementById("refresh-fill");
+
+  function tick() {
+    fillPct -= 100 / INTERVAL_S;
+    if (fillPct < 0) fillPct = 0;
+    fill.style.width = fillPct + "%";
+  }
+
+  function resetBar() {
+    fillPct = 100;
+    fill.style.transition = "none";
+    fill.style.width = "100%";
+    requestAnimationFrame(() => {
+      fill.style.transition = "width 1s linear";
+    });
+  }
+
+  if (!API_KEY || API_KEY.startsWith("{{")) {
+    document.body.innerHTML = `
+      <div class="no-key">
+        <p>API ключ не знайдено.</p>
+        <p>Відкрий: <code>http://127.0.0.1:8765/dashboard?key=YOUR_KEY</code></p>
+      </div>`;
+  } else {
+    fetchHealth();
+
+    setInterval(() => {
+      resetBar();
+      fetchHealth();
+    }, INTERVAL_S * 1000);
+
+    setInterval(tick, 1000);
+  }
+</script>
+<div id="chat-card" style="margin-top:24px;border:1px solid #2a3344;border-radius:12px;padding:16px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+    <span style="color:#6ea8fe;font-weight:bold;">Chat</span>
+    <select id="chat-model" style="background:#0d1117;color:#e6edf3;border:1px solid #2a3344;border-radius:6px;padding:4px 8px;">
+      <option value="smart" selected>smart (Gemini)</option>
+      <option value="fast">fast (Ollama free)</option>
+      <option value="deepseek">deepseek</option>
+      <option value="heavy">heavy (Claude Opus)</option>
+      <option value="council">council — рада</option>
+    </select>
+  </div>
+  <div id="chat-log" style="max-height:320px;overflow-y:auto;font-size:14px;line-height:1.5;"></div>
+  <div style="display:flex;gap:8px;margin-top:8px;">
+    <input id="chat-input" placeholder="Питання..." style="flex:1;background:#0d1117;color:#e6edf3;border:1px solid #2a3344;border-radius:6px;padding:8px;">
+    <button id="chat-send" style="background:#1f6feb;color:#fff;border:none;border-radius:6px;padding:8px 16px;">&gt;</button>
+  </div>
+</div>
+<script>
+(function () {
+  var msgs = [];
+  var log = document.getElementById("chat-log");
+  var inp = document.getElementById("chat-input");
+  function add(who, text) {
+    var d = document.createElement("div");
+    d.style.margin = "6px 0";
+    d.textContent = who + ": " + text;
+    d.style.color = who === "you" ? "#6ea8fe" : "#e6edf3";
+    log.appendChild(d);
+    log.scrollTop = log.scrollHeight;
+  }
+  async function send() {
+    var t = inp.value.trim();
+    if (!t) return;
+    inp.value = "";
+    add("you", t);
+    msgs.push({ role: "user", content: t });
+    var model = document.getElementById("chat-model").value;
+    add(model, "...");
+    var dots = log.lastChild;
+    var r = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-MCP-API-Key": API_KEY },
+      body: JSON.stringify({ model: model, messages: msgs })
+    }).catch(function (e) { return null; });
+    log.removeChild(dots);
+    if (!r) { add("error", "network"); return; }
+    var d = await r.json();
+    add(model, d.answer || JSON.stringify(d).slice(0, 300));
+      if (d.raw) { for (var k in d.raw) { add("- " + k, d.raw[k]); } }
+    msgs.push({ role: "assistant", content: d.answer || "" });
+    if (msgs.length > 16) msgs = msgs.slice(-16);
+  }
+  document.getElementById("chat-send").addEventListener("click", send);
+  inp.addEventListener("keydown", function (e) { if (e.key === "Enter") send(); });
+})();
+</script>
+</body>
+</html>

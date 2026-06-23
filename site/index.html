@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roman Lototskyi — Automation & self-hosted AI</title>
+<meta name="description" content="Roman Lototskyi — automation, Telegram AI bots, n8n workflows, self-hosted AI infrastructure.">
+<style>
+  :root{
+    --bg:#0d1117; --bg-soft:#161b22; --line:#21262d;
+    --txt:#c9d1d9; --txt-dim:#8b949e;
+    --accent:#58a6ff; --ok:#3fb950;
+    --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);color:var(--txt);
+    font-family:var(--sans);line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    padding:0 20px;
+  }
+  .wrap{max-width:760px;margin:0 auto}
+
+  /* header / terminal prompt */
+  header{
+    display:flex;align-items:center;justify-content:space-between;
+    gap:12px;padding:22px 0;border-bottom:1px solid var(--line);
+    font-family:var(--mono);font-size:13px;flex-wrap:wrap;
+  }
+  .prompt{color:var(--txt-dim)}
+  .prompt b{color:var(--accent);font-weight:600}
+  .status{display:flex;align-items:center;gap:7px;color:var(--txt-dim)}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--ok);
+    box-shadow:0 0 8px var(--ok);animation:pulse 2.4s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+  .lang{display:flex;gap:4px}
+  .lang button{
+    background:none;border:1px solid var(--line);color:var(--txt-dim);
+    font-family:var(--mono);font-size:12px;padding:3px 9px;border-radius:5px;
+    cursor:pointer;transition:.15s}
+  .lang button:hover{border-color:var(--accent);color:var(--txt)}
+  .lang button[aria-pressed="true"]{border-color:var(--accent);color:var(--accent)}
+
+  /* hero */
+  .hero{padding:54px 0 40px}
+  .hero h1{
+    font-family:var(--mono);font-size:clamp(30px,7vw,52px);
+    font-weight:700;letter-spacing:-1px;color:#f0f6fc;line-height:1.1}
+  .hero .role{
+    font-family:var(--mono);font-size:clamp(15px,3.4vw,19px);
+    color:var(--accent);margin-top:14px}
+  .hero .sub{color:var(--txt-dim);margin-top:18px;max-width:560px}
+
+  /* section heads */
+  .eyebrow{
+    font-family:var(--mono);font-size:12px;color:var(--txt-dim);
+    text-transform:uppercase;letter-spacing:2px;margin-bottom:18px;
+    display:flex;align-items:center;gap:10px}
+  .eyebrow::before{content:"//";color:var(--accent)}
+  section{padding:36px 0;border-top:1px solid var(--line)}
+
+  /* services */
+  .grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  @media(max-width:560px){.grid{grid-template-columns:1fr}}
+  .card{
+    background:var(--bg-soft);border:1px solid var(--line);
+    border-radius:10px;padding:20px;transition:.18s}
+  .card:hover{border-color:var(--accent);transform:translateY(-2px)}
+  .card h3{font-family:var(--mono);font-size:16px;color:#f0f6fc;margin-bottom:8px}
+  .card p{font-size:14px;color:var(--txt-dim)}
+
+  /* case: eidos as live output */
+  .case{
+    background:#010409;border:1px solid var(--line);border-radius:10px;
+    overflow:hidden}
+  .case .bar{
+    display:flex;align-items:center;gap:7px;padding:11px 15px;
+    border-bottom:1px solid var(--line);background:var(--bg-soft)}
+  .case .bar i{width:11px;height:11px;border-radius:50%;display:inline-block}
+  .case .bar .r{background:#ff5f56}.case .bar .y{background:#ffbd2e}.case .bar .g{background:#27c93f}
+  .case .bar span{font-family:var(--mono);font-size:12px;color:var(--txt-dim);margin-left:8px}
+  .case .body{padding:18px 16px;font-family:var(--mono);font-size:13.5px;line-height:1.9}
+  .case .body .ln{color:var(--txt-dim)}
+  .case .body .ln .ok{color:var(--ok)}
+  .case .body .desc{color:var(--txt);margin-top:14px;font-family:var(--sans);font-size:14px;line-height:1.7}
+
+  /* contacts */
+  .links{display:flex;flex-direction:column;gap:10px;max-width:420px}
+  .links a,.links button.mail{
+    display:flex;align-items:center;gap:12px;
+    background:var(--bg-soft);border:1px solid var(--line);border-radius:9px;
+    padding:14px 16px;color:var(--txt);text-decoration:none;
+    font-family:var(--mono);font-size:14px;transition:.16s;
+    cursor:pointer;width:100%;text-align:left}
+  .links a:hover,.links button.mail:hover{border-color:var(--accent);color:var(--accent)}
+  .links .k{color:var(--txt-dim);min-width:74px}
+
+  footer{
+    padding:30px 0;border-top:1px solid var(--line);
+    font-family:var(--mono);font-size:12px;color:var(--txt-dim);
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+
+  [data-en]{display:none}
+  html[lang="en"] [data-uk]{display:none}
+  html[lang="en"] [data-en]{display:initial}
+
+  @media(prefers-reduced-motion:reduce){
+    .dot{animation:none}*{scroll-behavior:auto}
+  }
+</style>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0d1117">
+  <meta name="mobile-web-app-capable" content="yes">
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(() => {});
+      });
+    }
+  </script>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <span class="prompt"><b>roman</b>@infra ~ %</span>
+    <div style="display:flex;align-items:center;gap:16px">
+      <span class="status"><span class="dot"></span><span data-uk>в мережі</span><span data-en>online</span></span>
+      <div class="lang">
+        <button onclick="setLang('uk')" aria-pressed="true">UA</button>
+        <button onclick="setLang('en')" aria-pressed="false">EN</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="hero">
+    <h1>Roman Lototskyi</h1>
+    <div class="role" data-uk>Автоматизація &amp; self-hosted AI-інфраструктура</div>
+    <div class="role" data-en>Automation &amp; self-hosted AI infrastructure</div>
+    <p class="sub" data-uk>Будую Telegram-ботів з пам'яттю, автоматизую процеси та розгортаю особисту AI-інфраструктуру на власних серверах. Працюю індивідуально, від ідеї до робочої системи.</p>
+    <p class="sub" data-en>I build Telegram bots with memory, automate processes, and deploy self-hosted AI infrastructure on private servers. I work solo, from idea to a running system.</p>
+  </div>
+
+  <section>
+    <div class="eyebrow" data-uk>що я роблю</div>
+    <div class="eyebrow" data-en>what i do</div>
+    <div class="grid">
+      <div class="card">
+        <h3 data-uk>Боти під ключ</h3><h3 data-en>Bots, end to end</h3>
+        <p data-uk>Telegram-боти з AI: голос, фото, діалогова пам'ять. Від ТЗ до робочого бота на вашій інфраструктурі.</p>
+        <p data-en>AI Telegram bots: voice, photo, dialog memory. From spec to a running bot on your own infrastructure.</p>
+      </div>
+      <div class="card">
+        <h3 data-uk>Автоматизація</h3><h3 data-en>Automation</h3>
+        <p data-uk>Робочі процеси на n8n: збір даних, сповіщення, інтеграції між сервісами без ручної роботи.</p>
+        <p data-en>n8n workflows: data collection, notifications, service-to-service integrations without manual work.</p>
+      </div>
+      <div class="card">
+        <h3 data-uk>Self-hosted AI</h3><h3 data-en>Self-hosted AI</h3>
+        <p data-uk>Особиста AI-інфраструктура на ваших серверах: моделі, векторна пам'ять, маршрутизація запитів.</p>
+        <p data-en>Personal AI infrastructure on your servers: models, vector memory, request routing.</p>
+      </div>
+      <div class="card">
+        <h3 data-uk>MCP-інтеграції</h3><h3 data-en>MCP integrations</h3>
+        <p data-uk>Підключення інструментів і даних до AI-асистентів через Model Context Protocol.</p>
+        <p data-en>Connecting tools and data to AI assistants via the Model Context Protocol.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow" data-uk>відкритий проєкт</div>
+    <div class="eyebrow" data-en>open-source project</div>
+    <div class="case">
+      <div class="bar"><i class="r"></i><i class="y"></i><i class="g"></i><span>eidos — personal AI assistant</span></div>
+      <div class="body">
+        <div class="ln" id="l1"></div>
+        <div class="ln" id="l2"></div>
+        <div class="ln" id="l3"></div>
+        <div class="ln" id="l4"></div>
+        <p class="desc" data-uk>Eidos — мій особистий AI-асистент у Telegram з власною інфраструктурою. Розуміє голос і фото, тримає пам'ять розмов у векторній базі та радиться з кількома моделями паралельно. Зібраний з нуля — від сервера до бота.</p>
+        <p class="desc" data-en>Eidos is my personal AI assistant in Telegram running on its own infrastructure. It understands voice and photos, keeps conversation memory in a vector database, and consults several models in parallel. Built from scratch — from server to bot.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="eyebrow" data-uk>зв'язок</div>
+    <div class="eyebrow" data-en>contact</div>
+    <div class="links">
+      <a href="https://t.me/Romeo200480" target="_blank" rel="noopener"><span class="k">telegram</span>@Romeo200480</a>
+      <button class="mail" onclick="mail()"><span class="k">email</span><span id="mailtxt">romeo200480 [at] gmail [dot] com</span></button>
+      <a href="https://github.com/romeo200480-hach" target="_blank" rel="noopener"><span class="k">github</span>romeo200480-hach</a>
+    </div>
+  </section>
+
+  <footer>
+    <span>Roman Lototskyi</span>
+    <span data-uk>Луцьк, Україна · 2026</span>
+    <span data-en>Lutsk, Ukraine · 2026</span>
+  </footer>
+
+</div>
+
+<script>
+  function setLang(l){
+    document.documentElement.lang=l;
+    var btns=document.querySelectorAll('.lang button');
+    btns[0].setAttribute('aria-pressed', l==='uk');
+    btns[1].setAttribute('aria-pressed', l==='en');
+  }
+
+  // email anti-bot: збирається лише при кліку
+  function mail(){
+    var u='romeo200480', d='gmail.com';
+    window.location.href='mailto:'+u+'@'+d;
+  }
+
+  // case: друк рядків health-check
+  var lines=[
+    {el:'l1', t:'<span class="ok">\u2713</span> voice + photo input'},
+    {el:'l2', t:'<span class="ok">\u2713</span> dialog memory (Qdrant)'},
+    {el:'l3', t:'<span class="ok">\u2713</span> multi-model council'},
+    {el:'l4', t:'<span class="ok">\u2713</span> self-hosted, MCP-ready'}
+  ];
+  var reduce=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduce){
+    lines.forEach(function(o){document.getElementById(o.el).innerHTML=o.t;});
+  }else{
+    var i=0;
+    function step(){
+      if(i>=lines.length)return;
+      document.getElementById(lines[i].el).innerHTML=lines[i].t;
+      i++; setTimeout(step,420);
+    }
+    setTimeout(step,400);
+  }
+</script>
+</body>
+</html>

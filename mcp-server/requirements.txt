@@ -1,0 +1,11 @@
+# Python MCP SDK + HTTP transport stack
+# Закріплено при: python 3.13.7, mcp 1.27.1
+mcp==1.27.1
+uvicorn==0.46.0
+starlette==1.0.0
+httpx==0.28.1
+httpx-sse==0.4.3
+pydantic==2.13.4
+pydantic-settings==2.14.1
+anyio==4.13.0
+psutil==7.2.2
